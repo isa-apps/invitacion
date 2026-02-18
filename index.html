@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invitación Especial - Acceso Reservado</title>
+    <style>
+        :root {
+            --bg-dark: #050508;
+            --neon-blue: #00f2ff;
+            --neon-purple: #9d00ff;
+            --neon-red: #ff3c3c;
+            --text-color: #e0e0e0;
+            --arcade-font: 'Courier New', Courier, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+            font-family: var(--arcade-font);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- EFECTOS DE AMBIENTE --- */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%,
+                rgba(0, 0, 0, 0.25) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.06),
+                rgba(0, 255, 0, 0.02),
+                rgba(0, 0, 255, 0.06)
+            );
+            background-size: 100% 4px, 3px 100%;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, transparent 40%, black 150%);
+            z-index: 1001;
+            pointer-events: none;
+        }
+
+        #particles-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* --- PANTALLAS --- */
+        .screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            transition: opacity 1s ease, transform 1s ease;
+            z-index: 3000;
+        }
+
+        .hidden {
+            display: none !important;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* --- ANIMACIONES Y ESTILOS ESPECÍFICOS --- */
+        .glitch-text {
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            color: var(--neon-blue);
+            text-shadow: 2px 0 var(--neon-red), -2px 0 var(--neon-purple);
+            animation: flicker 3s infinite;
+        }
+
+        @keyframes flicker {
+            0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% { opacity: 1; }
+            20%, 21.999%, 63%, 63.999%, 65%, 69.999% { opacity: 0.4; }
+        }
+
+        .btn-system {
+            margin-top: 30px;
+            padding: 15px 40px;
+            background: transparent;
+            border: 2px solid var(--neon-blue);
+            color: var(--neon-blue);
+            font-family: var(--arcade-font);
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 0 15px var(--neon-blue);
+            transition: all 0.3s;
+            animation: pulse 2s infinite;
+        }
+
+        .btn-system:hover {
+            background: var(--neon-blue);
+            color: var(--bg-dark);
+            box-shadow: 0 0 30px var(--neon-blue);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 15px var(--neon-blue); }
+            50% { transform: scale(1.05); box-shadow: 0 0 25px var(--neon-blue); }
+            100% { transform: scale(1); box-shadow: 0 0 15px var(--neon-blue); }
+        }
+
+        /* --- PUERTA METÁLICA --- */
+        .door {
+            position: fixed;
+            pointer-events: none;
+
+            top: 0;
+            width: 50%;
+            height: 100%;
+            background: #1a1a1a;
+            border: 5px solid #333;
+            z-index: 2000;
+            transition: transform 1.5s cubic-bezier(0.77, 0, 0.175, 1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        .door-left { left: 0; transform: translateX(0); border-right: 2px solid #555; }
+        .door-right { right: 0; transform: translateX(0); border-left: 2px solid #555; }
+        .door.open-left { transform: translateX(-100%); }
+        .door.open-right { transform: translateX(100%); }
+
+        .door-detail {
+            width: 80%;
+            height: 20px;
+            background: #222;
+            margin: 20px 0;
+            box-shadow: inset 0 0 10px #000;
+        }
+
+        /* --- MINI MISIÓN --- */
+        .mission-area {
+            position: relative;
+            width: 80vw;
+            height: 60vh;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            cursor: crosshair;
+        }
+
+        .target {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            opacity: 0.1; /* Semi-oculto */
+        }
+        .target:hover { opacity: 0.6; transform: scale(1.1); }
+        .target.found { opacity: 1 !important; transform: scale(1.2) rotate(10deg); filter: drop-shadow(0 0 10px gold); pointer-events: none; }
+
+        /* --- REVELACIÓN --- */
+        .revelation-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .name-banner {
+            font-size: 3rem;
+            color: #fff;
+            text-shadow: 0 0 20px var(--neon-purple), 0 0 40px var(--neon-purple);
+            animation: bounce 1s infinite alternate;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+
+        .info-card {
+            background: rgba(20, 20, 30, 0.8);
+            border: 1px solid var(--neon-blue);
+            padding: 15px;
+            margin: 5px;
+            border-radius: 5px;
+            transition: transform 0.3s;
+        }
+        .info-card:hover { transform: scale(1.05); border-color: #fff; }
+
+        .countdown {
+            font-size: 1.2rem;
+            color: var(--neon-red);
+            margin-top: 10px;
+        }
+
+        .character {
+            width: 150px;
+            height: 150px;
+            margin: 10px;
+        }
+
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .audio-control {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 3000;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--neon-blue);
+            color: white;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+    <canvas id="particles-canvas"></canvas>
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- PUERTAS -->
+    <div id="door-l" class="door door-left">
+        <div style="display:flex; flex-direction:column; align-items:center; width:100%;">
+            <div class="door-detail"></div>
+            <div class="door-detail"></div>
+            <div class="door-detail"></div>
+        </div>
+    </div>
+    <div id="door-r" class="door door-right">
+        <div style="display:flex; flex-direction:column; align-items:center; width:100%;">
+            <div class="door-detail"></div>
+            <div class="door-detail"></div>
+            <div class="door-detail"></div>
+        </div>
+    </div>
+
+    <button id="audio-toggle" class="audio-control">🔇 SONIDO: OFF</button>
+
+    <!-- PANTALLA 1: INTRIGA -->
+    <div id="screen-1" class="screen">
+        <h1 class="glitch-text">SISTEMA DE SEGURIDAD ACTIVADO</h1>
+        <p style="margin-top:20px; opacity: 0.8;">"Las cámaras detectaron algo especial esta noche..."</p>
+        <button id="btn-start" class="btn-system">[ ACCEDER AL SISTEMA ]</button>
+    </div>
+
+    <!-- PANTALLA 2: MISIÓN -->
+    <div id="screen-2" class="screen hidden">
+        <h2 style="color: var(--neon-purple); margin-bottom: 20px;">PROTOCOLO DE DESBLOQUEO</h2>
+        <p style="margin-bottom: 15px;">Encuentra los 3 elementos ocultos para acceder a la sorpresa...</p>
+        <div class="mission-area" id="mission-area">
+            <!-- Items se generan por JS para posiciones aleatorias -->
+        </div>
+        <p id="mission-status" style="margin-top: 20px; color: var(--neon-blue);">Detectando señales... (0/3)</p>
+    </div>
+
+    <!-- PANTALLA 3: REVELACIÓN -->
+    <div id="screen-3" class="screen hidden">
+        <div class="revelation-container">
+            <h1 id="bday-name" class="name-banner">¡ES EL CUMPLEAÑOS DE NOMBRE!</h1>
+            <h2 id="bday-age" style="color: var(--neon-blue);">X AÑOS DE AVENTURA</h2>
+            
+            <div style="display:flex; justify-content:center; flex-wrap: wrap;">
+                <!-- Personajes SVG -->
+                <svg class="character" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="#5c4033" stroke="#333" stroke-width="2"/>
+                    <circle cx="35" cy="40" r="8" fill="white"/>
+                    <circle cx="35" cy="40" r="4" fill="#00f2ff"/>
+                    <circle cx="65" cy="40" r="8" fill="white"/>
+                    <circle cx="65" cy="40" r="4" fill="#00f2ff"/>
+                    <rect x="40" y="60" width="20" height="10" rx="5" fill="#333"/>
+                    <path d="M 30 20 Q 50 10 70 20" fill="none" stroke="#333" stroke-width="5"/>
+                </svg>
+                <svg class="character" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="#8b0000" stroke="#333" stroke-width="2"/>
+                    <circle cx="35" cy="40" r="8" fill="white"/>
+                    <circle cx="35" cy="40" r="4" fill="yellow"/>
+                    <circle cx="65" cy="40" r="8" fill="white"/>
+                    <circle cx="65" cy="40" r="4" fill="yellow"/>
+                    <path d="M 40 70 Q 50 80 60 70" fill="none" stroke="#fff" stroke-width="3"/>
+                    <path d="M 20 20 L 40 30" stroke="#333" stroke-width="5"/>
+                    <path d="M 80 20 L 60 30" stroke="#333" stroke-width="5"/>
+                </svg>
+            </div>
+
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                <div class="info-card" id="info-fecha">📅 FECHA: --/--/----</div>
+                <div class="info-card" id="info-hora">⏰ HORA: --:--</div>
+                <div class="info-card" id="info-lugar">📍 LUGAR: ----------</div>
+                <p id="personal-phrase" style="font-style: italic; color: #aaa; margin: 10px 0;"></p>
+                <div id="timer" class="countdown">Faltan: --d --h --m --s</div>
+            </div>
+
+            <button id="btn-confirm" class="btn-system" style="animation: none; margin-top: 10px;">[ CONFIRMAR ASISTENCIA ]</button>
+        </div>
+    </div>
+
+    <script>
+        /* --- CONFIGURACIÓN EDITABLE --- */
+        const CONFIG = {
+            NOMBRE: "MATÍAS",
+            EDAD: "10",
+            FECHA: "2026-10-31", // Formato YYYY-MM-DD para el contador
+            FECHA_TEXTO: "Sábado 31 de Octubre",
+            HORA: "18:00 HS",
+            LUGAR: "Pizzeria 'The Fun Zone', Calle 123",
+            FRASE_PERSONALIZADA: "¡Prepárate para una noche de juegos, pizza y mucha diversión!",
+            WHATSAPP_CONFIRMACION: "5491122334455" // Opcional: número para confirmar
+        };
+
+        /* --- VARIABLES DE ESTADO --- */
+        let foundCount = 0;
+        let audioEnabled = false;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        /* --- SONIDOS SINTETIZADOS (Sin archivos externos) --- */
+        function playTone(freq, type, duration, vol = 0.1) {
+            if (!audioEnabled) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playSuccessSound() {
+            playTone(440, 'sine', 0.2);
+            setTimeout(() => playTone(880, 'sine', 0.4), 100);
+        }
+
+        function playClickSound() {
+            playTone(150, 'square', 0.1, 0.05);
+        }
+
+        function playUnlockSound() {
+            playTone(200, 'sawtooth', 0.5);
+            playTone(300, 'sawtooth', 0.5);
+            playTone(400, 'sawtooth', 0.8);
+        }
+
+        /* --- PARTÍCULAS --- */
+        const canvas = document.getElementById('particles-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function initParticles() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            particles = [];
+            for (let i = 0; i < 50; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 1,
+                    speedX: Math.random() * 0.5 - 0.25,
+                    speedY: Math.random() * 0.5 - 0.25,
+                    opacity: Math.random() * 0.5 + 0.2
+                });
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.x += p.speedX;
+                p.y += p.speedY;
+                if (p.x < 0) p.x = canvas.width;
+                if (p.x > canvas.width) p.x = 0;
+                if (p.y < 0) p.y = canvas.height;
+                if (p.y > canvas.height) p.y = 0;
+                
+                ctx.fillStyle = `rgba(157, 0, 255, ${p.opacity})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+
+        /* --- CONFETTI --- */
+        const confCanvas = document.getElementById('confetti-canvas');
+        const confCtx = confCanvas.getContext('2d');
+        let confetti = [];
+
+        function startConfetti() {
+            confCanvas.width = window.innerWidth;
+            confCanvas.height = window.innerHeight;
+            for (let i = 0; i < 100; i++) {
+                confetti.push({
+                    x: Math.random() * confCanvas.width,
+                    y: Math.random() * confCanvas.height - confCanvas.height,
+                    size: Math.random() * 10 + 5,
+                    color: `hsl(${Math.random() * 360}, 70%, 60%)`,
+                    speedY: Math.random() * 3 + 2,
+                    speedX: Math.random() * 2 - 1,
+                    rotation: Math.random() * 360
+                });
+            }
+            animateConfetti();
+        }
+
+        function animateConfetti() {
+            confCtx.clearRect(0, 0, confCanvas.width, confCanvas.height);
+            confetti.forEach(c => {
+                c.y += c.speedY;
+                c.x += c.speedX;
+                c.rotation += 2;
+                if (c.y > confCanvas.height) c.y = -20;
+                
+                confCtx.save();
+                confCtx.translate(c.x, c.y);
+                confCtx.rotate(c.rotation * Math.PI / 180);
+                confCtx.fillStyle = c.color;
+                confCtx.fillRect(-c.size/2, -c.size/2, c.size, c.size);
+                confCtx.restore();
+            });
+            requestAnimationFrame(animateConfetti);
+        }
+
+        /* --- LÓGICA DE JUEGO --- */
+        function initMission() {
+            const area = document.getElementById('mission-area');
+            const items = [
+                { id: 'eyes', svg: `<svg viewBox="0 0 100 100"><circle cx="30" cy="50" r="10" fill="#fff"/><circle cx="30" cy="50" r="5" fill="red"/><circle cx="70" cy="50" r="10" fill="#fff"/><circle cx="70" cy="50" r="5" fill="red"/></svg>` },
+                { id: 'cupcake', svg: `<svg viewBox="0 0 100 100"><path d="M30 70 L70 70 L60 90 L40 90 Z" fill="#ff69b4"/><circle cx="50" cy="50" r="30" fill="#f4a460"/><circle cx="50" cy="20" r="8" fill="red"/></svg>` },
+                { id: 'button', svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#333" stroke="red" stroke-width="5"/><circle cx="50" cy="50" r="25" fill="red" class="flicker-anim"/></svg>` }
+            ];
+
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'target';
+                div.innerHTML = item.svg;
+                div.style.left = (Math.random() * 80 + 5) + '%';
+                div.style.top = (Math.random() * 80 + 5) + '%';
+                div.onclick = () => {
+                    if (!div.classList.contains('found')) {
+                        div.classList.add('found');
+                        foundCount++;
+                        document.getElementById('mission-status').innerText = `¡Señal detectada! (${foundCount}/3)`;
+                        playSuccessSound();
+                        if (foundCount === 3) unlockFinal();
+                    }
+                };
+                area.appendChild(div);
+            });
+        }
+
+        function unlockFinal() {
+            setTimeout(() => {
+                playUnlockSound();
+                document.getElementById('screen-2').classList.add('hidden');
+                document.getElementById('screen-3').classList.remove('hidden');
+                startConfetti();
+                // Llenar datos
+                document.getElementById('bday-name').innerText = `¡ES EL CUMPLEAÑOS DE ${CONFIG.NOMBRE}!`;
+                document.getElementById('bday-age').innerText = `${CONFIG.EDAD} AÑOS DE AVENTURA`;
+                document.getElementById('info-fecha').innerText = `📅 FECHA: ${CONFIG.FECHA_TEXTO}`;
+                document.getElementById('info-hora').innerText = `⏰ HORA: ${CONFIG.HORA}`;
+                document.getElementById('info-lugar').innerText = `📍 LUGAR: ${CONFIG.LUGAR}`;
+                document.getElementById('personal-phrase').innerText = CONFIG.FRASE_PERSONALIZADA;
+                
+                setInterval(updateTimer, 1000);
+            }, 1000);
+        }
+
+        function updateTimer() {
+            const target = new Date(CONFIG.FECHA + 'T' + CONFIG.HORA.split(' ')[0]).getTime();
+            const now = new Date().getTime();
+            const diff = target - now;
+
+            if (diff < 0) {
+                document.getElementById('timer').innerText = "¡ES HOY!";
+                return;
+            }
+
+            const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+            document.getElementById('timer').innerText = `Faltan: ${d}d ${h}h ${m}m ${s}s`;
+        }
+
+        /* --- EVENTOS --- */
+        document.getElementById('btn-start').onclick = () => {
+            playClickSound();
+            document.getElementById('door-l').classList.add('open-left');
+            document.getElementById('door-r').classList.add('open-right');
+            
+            setTimeout(() => {
+                document.getElementById('screen-1').classList.add('hidden');
+                document.getElementById('screen-2').classList.remove('hidden');
+                initMission();
+            }, 1500);
+        };
+
+        document.getElementById('btn-confirm').onclick = () => {
+            playSuccessSound();
+            alert("¡Tu lugar está reservado en la noche más increíble del año!");
+            // Aquí se podría redirigir a WhatsApp si se desea:
+            // window.open(`https://wa.me/${CONFIG.WHATSAPP_CONFIRMACION}?text=Hola! Confirmo mi asistencia al cumple de ${CONFIG.NOMBRE}`);
+        };
+
+        document.getElementById('audio-toggle').onclick = () => {
+            audioEnabled = !audioEnabled;
+            if (audioEnabled && audioCtx.state === 'suspended') audioCtx.resume();
+            document.getElementById('audio-toggle').innerText = audioEnabled ? "🔊 SONIDO: ON" : "🔇 SONIDO: OFF";
+        };
+
+        window.onresize = () => {
+            initParticles();
+            confCanvas.width = window.innerWidth;
+            confCanvas.height = window.innerHeight;
+        };
+
+        // Inicio
+        initParticles();
+        animateParticles();
+
+    </script>
+</body>
+</html>
