@@ -221,10 +221,22 @@
             margin-top: 10px;
         }
 
-        .character {
-            width: 150px;
-            height: 150px;
+        .character-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
             margin: 10px;
+        }
+
+        .character {
+            width: 180px;
+            height: auto;
+            filter: drop-shadow(0 0 20px var(--neon-purple));
+            transition: transform 0.3s ease;
+        }
+
+        .character:hover {
+            transform: scale(1.1) rotate(3deg);
         }
 
         #confetti-canvas {
@@ -298,26 +310,13 @@
             <h2 id="bday-age" style="color: var(--neon-blue);">X AÑOS DE AVENTURA</h2>
             
             <div style="display:flex; justify-content:center; flex-wrap: wrap;">
-                <!-- Personajes SVG -->
-                <svg class="character" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="45" fill="#5c4033" stroke="#333" stroke-width="2"/>
-                    <circle cx="35" cy="40" r="8" fill="white"/>
-                    <circle cx="35" cy="40" r="4" fill="#00f2ff"/>
-                    <circle cx="65" cy="40" r="8" fill="white"/>
-                    <circle cx="65" cy="40" r="4" fill="#00f2ff"/>
-                    <rect x="40" y="60" width="20" height="10" rx="5" fill="#333"/>
-                    <path d="M 30 20 Q 50 10 70 20" fill="none" stroke="#333" stroke-width="5"/>
-                </svg>
-                <svg class="character" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="45" fill="#8b0000" stroke="#333" stroke-width="2"/>
-                    <circle cx="35" cy="40" r="8" fill="white"/>
-                    <circle cx="35" cy="40" r="4" fill="yellow"/>
-                    <circle cx="65" cy="40" r="8" fill="white"/>
-                    <circle cx="65" cy="40" r="4" fill="yellow"/>
-                    <path d="M 40 70 Q 50 80 60 70" fill="none" stroke="#fff" stroke-width="3"/>
-                    <path d="M 20 20 L 40 30" stroke="#333" stroke-width="5"/>
-                    <path d="M 80 20 L 60 30" stroke="#333" stroke-width="5"/>
-                </svg>
+                <!-- Personajes con sistema de carga robusto -->
+                <div class="character-wrapper">
+                    <img id="char1" class="character" alt="Personaje 1">
+                </div>
+                <div class="character-wrapper">
+                    <img id="char2" class="character" alt="Personaje 2">
+                </div>
             </div>
 
             <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
@@ -378,6 +377,33 @@
             playTone(200, 'sawtooth', 0.5);
             playTone(300, 'sawtooth', 0.5);
             playTone(400, 'sawtooth', 0.8);
+        }
+
+        /* --- CARGA DE PERSONAJES --- */
+        const FALLBACK_SVG = `<svg viewBox="0 0 100 100" class="character"><circle cx="50" cy="50" r="45" fill="#333" stroke="var(--neon-blue)" stroke-width="2"/><path d="M 30 40 Q 50 30 70 40" fill="none" stroke="var(--neon-blue)" stroke-width="3"/><circle cx="35" cy="45" r="5" fill="var(--neon-blue)"/><circle cx="65" cy="45" r="5" fill="var(--neon-blue)"/><path d="M 40 70 Q 50 80 60 70" fill="none" stroke="var(--neon-blue)" stroke-width="3"/></svg>`;
+
+        function loadCharacter(imgElement, baseName) {
+            const formats = ["png", "jpg", "jpeg", "webp"];
+            let index = 0;
+            let triedDefault = false;
+
+            function tryNext() {
+                if (index < formats.length) {
+                    const currentExt = formats[index];
+                    index++;
+                    imgElement.src = `assets/${baseName}.${currentExt}`;
+                } else if (!triedDefault) {
+                    triedDefault = true;
+                    imgElement.src = "assets/default.png";
+                } else {
+                    // Fallback final: Reemplazar el <img> por un SVG interno
+                    const wrapper = imgElement.parentElement;
+                    wrapper.innerHTML = FALLBACK_SVG;
+                }
+            }
+
+            imgElement.onerror = tryNext;
+            tryNext();
         }
 
         /* --- PARTÍCULAS --- */
@@ -501,6 +527,10 @@
                 document.getElementById('info-lugar').innerText = `📍 LUGAR: ${CONFIG.LUGAR}`;
                 document.getElementById('personal-phrase').innerText = CONFIG.FRASE_PERSONALIZADA;
                 
+                // Cargar personajes
+                loadCharacter(document.getElementById("char1"), "freddy");
+                loadCharacter(document.getElementById("char2"), "bonnie");
+
                 setInterval(updateTimer, 1000);
             }, 1000);
         }
